@@ -1,3 +1,5 @@
+require('./config/config');
+
 const _ = require('lodash');
 const express = require('express');
 // json과 object를 넘나든다. 
@@ -9,7 +11,7 @@ var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
 
 var app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
@@ -70,7 +72,7 @@ app.patch('/todos/:id', (req, res) => {
     return res.status(404).send();
   }
 
-  // completed가 true가 되면 완료한 시간을 찍어준다. 
+  // completed가 true가 되면 더 이상 간직할 필요가 없다. 
   if (_.isBoolean(body.completed) && body.completed) {
     body.completedAt = new Date().getTime();
   } else {
@@ -80,7 +82,7 @@ app.patch('/todos/:id', (req, res) => {
 
   Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
     if (!todo) {
-      return res.status(400).send();
+      return res.status(404).send();
     }
     res.send({todo});
   }).catch((e) => {
