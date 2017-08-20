@@ -1,7 +1,8 @@
-var express = require('express');
+const _ = require('lodash');
+const express = require('express');
 // json과 object를 넘나든다. 
-var bodyParser = require('body-parser');
-var {ObjectID} = require('mongodb');
+const bodyParser = require('body-parser');
+const {ObjectID} = require('mongodb');
 
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
@@ -17,8 +18,8 @@ app.post('/todos', (req, res) => {
     text: req.body.text
   });
 
-  todo.save().then((doc) => {
-    res.send(doc);
+  todo.save().then((todo) => {
+    res.send({todo});
   }, (e) => {
     res.status(400).send(e);
   });
@@ -58,6 +59,33 @@ app.delete('/todos/:id', (req, res) => {
     }
     res.status(200).send({todo});
   }).catch((e) => res.status(400).send());
+});
+
+app.patch('/todos/:id', (req, res) => {
+  var id = req.params.id;
+  // 내가 원하는 부분만 유저가 작성할 수 있게 한다. 
+  var body = _.pick(req.body, ['text', 'completed']);
+
+  if (!ObjectID.isValid(id)) {
+    return res.status(404).send();
+  }
+
+  // completed가 true가 되면 완료한 시간을 찍어준다. 
+  if (_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  } else {
+    body.completed = false;
+    body.completedAt = null;
+  }
+
+  Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
+    if (!todo) {
+      return res.status(400).send();
+    }
+    res.send({todo});
+  }).catch((e) => {
+    res.status(400).send();
+  })
 });
 
 app.listen(port, () => {
